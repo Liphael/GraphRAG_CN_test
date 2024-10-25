@@ -26,6 +26,8 @@ PYTHONPATH="$(pwd)" python examples/single_verb/run.py
 - win shell系统傻瓜式脚本：<br>
 见脚本文件夹[scripts](./scripts)：`try.bat`
 
+### **注意：论文源文件需要处理为txt文件输入！**
+### **论文的切片方法：**
 ### 创建Try测试目录：
 ```shell
 # Try目录的官方等效目录为`./tests`；
@@ -52,6 +54,8 @@ python -m graphrag.index --init --root ./try
 cp examples/custom_input/pipeline_CN.yml ./try
 mv try/pipeline_CN.yml try/settings.yml
 # 编辑settings文件，修改您所需要的配置参数、API等:
+# 编辑.env文件：
+
 
 # 启动构建
 # 启动命令中的`--resume`参数用于保证rate limit导致的中断，能在下次运行时继续
