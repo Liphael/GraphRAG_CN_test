@@ -46,7 +46,7 @@ cp try/data/data0.txt ./try/input/
 # 此指令指向路径`./graphrag/index/`下的`_ini_.py`文件：
 # 指令中`--root ./xxx`指定运行根目录为`./xxx`，此处以`./try`为例：
 python -m graphrag.index --init --root ./try
-# 运行后将会生成output文件夹，prompt文件夹，一个`.env`文件，一个`settings.yml`文件。
+# 运行后将会生成prompts文件夹，一个`.env`文件，一个`settings.yml`文件。
 
 # 配置
 # 配置原始汉化模板，见目录`./examples/custom_input/`下`pipeline_CN`文件：
