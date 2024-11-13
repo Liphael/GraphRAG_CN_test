@@ -114,6 +114,28 @@ def store_entity_behavior_embeddings(
     return vectorstore
 
 
+def store_reports_semantic_embeddings(
+    reports: list[CommunityReport],
+    vectorstore: BaseVectorStore,
+) -> BaseVectorStore:
+    """Store entity semantic embeddings in a vectorstore."""
+    documents = [
+        VectorStoreDocument(
+            id=report.id,
+            text=report.full_content,
+            vector=report.full_content_embedding,
+            attributes=(
+                {"title": report.title, **report.attributes}
+                if report.attributes
+                else {"title": report.title}
+            ),
+        )
+        for report in reports
+    ]
+    vectorstore.load_documents(documents=documents)
+    return vectorstore
+
+
 def read_relationships(
     df: pd.DataFrame,
     id_col: str = "id",
@@ -193,6 +215,7 @@ def read_communities(
     entities_col: str | None = "entity_ids",
     relationships_col: str | None = "relationship_ids",
     covariates_col: str | None = "covariate_ids",
+    sub_communities_col: str | None = "sub_community_ids",
     attributes_cols: list[str] | None = None,
 ) -> list[Community]:
     """Read communities from a dataframe."""
@@ -208,6 +231,7 @@ def read_communities(
             covariate_ids=to_optional_dict(
                 row, covariates_col, key_type=str, value_type=str
             ),
+            sub_community_ids=to_optional_list(row, sub_communities_col, item_type=str),
             attributes=(
                 {col: row.get(col) for col in attributes_cols}
                 if attributes_cols
