@@ -3,19 +3,15 @@
 
 """Query Factory methods to support CLI."""
 
-from copy import deepcopy
-
 import tiktoken
 
-from graphrag.config import GraphRagConfig
-from graphrag.model import (
-    Community,
-    CommunityReport,
-    Covariate,
-    Entity,
-    Relationship,
-    TextUnit,
-)
+from graphrag.config.models.graph_rag_config import GraphRagConfig
+from graphrag.model.community import Community
+from graphrag.model.community_report import CommunityReport
+from graphrag.model.covariate import Covariate
+from graphrag.model.entity import Entity
+from graphrag.model.relationship import Relationship
+from graphrag.model.text_unit import TextUnit
 from graphrag.query.context_builder.entity_extraction import EntityVectorStoreKey
 from graphrag.query.llm.get_client import get_llm, get_text_embedder
 from graphrag.query.structured_search.drift_search.drift_context import (
@@ -30,7 +26,7 @@ from graphrag.query.structured_search.local_search.mixed_context import (
     LocalSearchMixedContext,
 )
 from graphrag.query.structured_search.local_search.search import LocalSearch
-from graphrag.vector_stores import BaseVectorStore
+from graphrag.vector_stores.base import BaseVectorStore
 
 
 def get_local_search_engine(
@@ -42,6 +38,7 @@ def get_local_search_engine(
     covariates: dict[str, list[Covariate]],
     response_type: str,
     description_embedding_store: BaseVectorStore,
+    system_prompt: str | None = None,
 ) -> LocalSearch:
     """Create a local search engine based on data + configuration."""
     llm = get_llm(config)
@@ -52,6 +49,7 @@ def get_local_search_engine(
 
     return LocalSearch(
         llm=llm,
+        system_prompt=system_prompt,
         context_builder=LocalSearchMixedContext(
             community_reports=reports,
             text_units=text_units,
@@ -95,6 +93,9 @@ def get_global_search_engine(
     communities: list[Community],
     response_type: str,
     dynamic_community_selection: bool = False,
+    map_system_prompt: str | None = None,
+    reduce_system_prompt: str | None = None,
+    general_knowledge_inclusion_prompt: str | None = None,
 ) -> GlobalSearch:
     """Create a global search engine based on data + configuration."""
     token_encoder = tiktoken.get_encoding(config.encoding_model)
@@ -102,12 +103,11 @@ def get_global_search_engine(
 
     dynamic_community_selection_kwargs = {}
     if dynamic_community_selection:
-        gs_config = config.global_search
-        _config = deepcopy(config)
-        _config.llm.model = _config.llm.deployment_name = gs_config.dynamic_search_llm
+        # TODO: Allow for another llm definition only for Global Search to leverage -mini models
+
         dynamic_community_selection_kwargs.update({
-            "llm": get_llm(_config),
-            "token_encoder": tiktoken.encoding_for_model(gs_config.dynamic_search_llm),
+            "llm": get_llm(config),
+            "token_encoder": tiktoken.encoding_for_model(config.llm.model),
             "keep_parent": gs_config.dynamic_search_keep_parent,
             "num_repeats": gs_config.dynamic_search_num_repeats,
             "use_summary": gs_config.dynamic_search_use_summary,
@@ -118,6 +118,9 @@ def get_global_search_engine(
 
     return GlobalSearch(
         llm=get_llm(config),
+        map_system_prompt=map_system_prompt,
+        reduce_system_prompt=reduce_system_prompt,
+        general_knowledge_inclusion_prompt=general_knowledge_inclusion_prompt,
         context_builder=GlobalCommunityContext(
             community_reports=reports,
             communities=communities,
@@ -166,6 +169,7 @@ def get_drift_search_engine(
     entities: list[Entity],
     relationships: list[Relationship],
     description_embedding_store: BaseVectorStore,
+    local_system_prompt: str | None = None,
 ) -> DRIFTSearch:
     """Create a local search engine based on data + configuration."""
     llm = get_llm(config)
@@ -182,6 +186,8 @@ def get_drift_search_engine(
             reports=reports,
             entity_text_embeddings=description_embedding_store,
             text_units=text_units,
+            local_system_prompt=local_system_prompt,
+            config=config.drift_search,
         ),
         token_encoder=token_encoder,
     )
